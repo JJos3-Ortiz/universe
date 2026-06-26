@@ -424,7 +424,7 @@ function drawModalPreview(id){
 
 function getPos(e){
   const r=cv.getBoundingClientRect();
-  const src=e.touches?e.touches[0]:(e.changedTouches?e.changedTouches[0]:e);
+  const src=(e.changedTouches&&e.changedTouches[0])?e.changedTouches[0]:((e.touches&&e.touches[0])?e.touches[0]:e);
   // Escala entre el tamaño CSS visual del canvas (rect) y su resolución interna real (cv.width/height).
   // En móvil ambos pueden diferir, por lo que sin este ajuste los taps no coinciden con los planetas.
   const scaleX=cv.width/r.width;
@@ -459,3 +459,4 @@ overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.classList.rem
 </script>
 </body>
 </html>
+
