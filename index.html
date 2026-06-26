@@ -1,0 +1,277 @@
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+#wrap{position:relative;width:100%;background:#02020e;overflow:hidden;user-select:none}
+#c{display:block;touch-action:none}
+#tip{position:absolute;pointer-events:none;background:rgba(5,5,20,0.92);color:#fff;font:12px/1 sans-serif;padding:6px 12px;border-radius:20px;border:1px solid rgba(255,255,255,0.15);display:none;white-space:nowrap;letter-spacing:.5px;transform:translate(14px,-50%)}
+#overlay{display:none;position:absolute;inset:0;background:rgba(0,0,8,0.88);align-items:center;justify-content:center;z-index:99}
+#overlay.on{display:flex}
+#mbox{max-width:370px;width:90%;background:#07071e;border:1px solid rgba(255,255,255,0.1);border-radius:22px;padding:28px 24px 22px;text-align:center}
+#mcanvas{display:block;margin:0 auto 14px;border-radius:50%}
+#mname{font:600 18px Georgia,serif;color:#fff;margin-bottom:3px}
+#mtype{font:11px sans-serif;color:rgba(255,255,255,0.32);letter-spacing:2px;text-transform:uppercase;margin-bottom:14px}
+#mline{height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.12),transparent);margin-bottom:16px}
+#mpoem{font:italic 13.5px/2 Georgia,serif;color:rgba(255,255,255,0.82)}
+#mclose{margin-top:20px;background:transparent;border:1px solid rgba(255,255,255,0.18);color:rgba(255,255,255,0.5);padding:9px 26px;border-radius:24px;cursor:pointer;font:13px sans-serif;letter-spacing:.5px}
+#mclose:hover{border-color:rgba(255,255,255,0.45);color:#fff}
+</style>
+<div id="wrap">
+<canvas id="c"></canvas>
+<div id="tip"></div>
+<div id="overlay">
+  <div id="mbox">
+    <canvas id="mcanvas" width="90" height="90"></canvas>
+    <div id="mname"></div>
+    <div id="mtype"></div>
+    <div id="mline"></div>
+    <div id="mpoem"></div>
+    <button id="mclose">Cerrar</button>
+  </div>
+</div>
+</div>
+<script>
+const wrap=document.getElementById('wrap');
+const cv=document.getElementById('c');
+const ctx=cv.getContext('2d');
+const tip=document.getElementById('tip');
+const overlay=document.getElementById('overlay');
+const mcanvas=document.getElementById('mcanvas');
+const mctx=mcanvas.getContext('2d');
+
+function resize(){cv.width=wrap.clientWidth||680;cv.height=Math.min(500,cv.width*0.73);}
+resize();window.addEventListener('resize',resize);
+
+const DATA={
+  sun:{name:'El Sol',type:'Estrella',poem:`Arleth, eres como el Sol.\nNo porque seas lejana,\nsino porque todo a tu alrededor\nencuentra calor sin saber por qué.\nEres la razón por la que\ncada día vale la pena comenzar.`},
+  mercury:{name:'Mercurio',type:'Planeta',poem:`Arleth, eres como Mercurio.\nRápida, brillante, imposible de ignorar.\nCuando pasas, el tiempo parece\ncorrer diferente,\ncomo si el universo supiera\nque algo extraordinario acaba de cruzar.`},
+  venus:{name:'Venus',type:'Planeta del Amor',poem:`Arleth, eres como Venus.\nLa primera en aparecer cada noche\ny la última en desvanecerse.\nNo necesitas el sol para brillar,\ntu propia luz es suficiente\npara guiar a quien sabe mirarte.`},
+  earth:{name:'La Tierra',type:'Nuestro Hogar',poem:`Arleth, eres como la Tierra.\nEl único lugar en todo el universo\ndonde todo tiene vida y sentido.\nContigo, cualquier lugar\nse convierte en hogar,\ncualquier momento, en eterno.`},
+  mars:{name:'Marte',type:'Planeta Rojo',poem:`Arleth, eres como Marte.\nIntensa, apasionada, llena de misterio.\nHay en ti mundos que todavía\nnadie ha tenido el privilegio de conocer,\ny yo quisiera ser\nel primero en explorarlos todos.`},
+  jupiter:{name:'Júpiter',type:'Gigante Gaseoso',poem:`Arleth, eres como Júpiter.\nGrande en presencia, grande en alma,\ncapaz de proteger con tu fuerza\na quienes orbitan cerca de ti.\nCon solo estar, cambias\nla gravedad de todo lo que te rodea.`},
+  saturn:{name:'Saturno',type:'Señor de los Anillos',poem:`Arleth, eres como Saturno.\nTienes algo que ninguna otra tiene:\nesos anillos invisibles que llevas,\nhecha de detalles únicos\nque te hacen diferente\na cualquier cosa que exista en este cosmos.`},
+  uranus:{name:'Urano',type:'Gigante de Hielo',poem:`Arleth, eres como Urano.\nDistinta, inesperada, única en tu manera de ser.\nMientras los demás siguen la norma,\ntú giras a tu propio ritmo\ny en esa diferencia\nes donde está toda tu magia.`},
+  neptune:{name:'Neptuno',type:'Planeta Azul',poem:`Arleth, eres como Neptuno.\nProfunda, serena, llena de corrientes\nque pocos se atreven a sentir.\nHay en ti una intensidad tranquila\nque solo descubre quien\ntiene el valor de acercarse.`},
+  star1:{name:'Alfa Centauri',type:'Estrella Cercana',poem:`Arleth, eres como Alfa Centauri.\nLa estrella más cercana al corazón.\nNo importa la distancia que haya,\nsiempre que levanto los ojos\neres tú la primera\nen la que pienso.`},
+  star2:{name:'Sirius',type:'Estrella más Brillante',poem:`Arleth, brillas como Sirius.\nLa más brillante de todo el cielo,\nno porque lo intentes,\nsino porque es lo que eres.\nCuando entras a un lugar,\ntodo lo demás palidece.`},
+  star3:{name:'Betelgeuse',type:'Supergigante Roja',poem:`Arleth, eres como Betelgeuse.\nInmensa, ardiente, imposible de ignorar.\nHay en ti una energía tan grande\nque el universo entero\nse detiene a mirarte\ncada vez que decides brillar.`}
+};
+
+const PLANETS=[
+  {id:'mercury',r:4,  orbit:60, speed:.008, angle:1.2,bands:['#5c5c5c','#787878','#6a6a6a','#4e4e4e']},
+  {id:'venus',  r:7,  orbit:90, speed:.006, angle:.5, bands:['#d4a96a','#c9954a','#e0c080','#b88840']},
+  {id:'earth',  r:9,  orbit:122,speed:.005, angle:2.1,bands:['#1a6e9e','#2e8b57','#4a9abe','#3cb371','#1c5f88']},
+  {id:'mars',   r:5.5,orbit:155,speed:.004, angle:3.5,bands:['#b5421a','#cd5c2a','#a03010','#d06030']},
+  {id:'jupiter',r:17, orbit:203,speed:.003, angle:.8, bands:['#c8a87a','#b89060','#d4b890','#a07848','#c0a060','#d8c098','#b88850']},
+  {id:'saturn', r:13, orbit:253,speed:.002, angle:4.2,bands:['#d4c080','#c8b068','#e0cc90','#b89858','#d0bc78']},
+  {id:'uranus', r:10, orbit:293,speed:.0015,angle:1.8,bands:['#6dc0c0','#5aafaf','#7dd0d0','#50a0a0']},
+  {id:'neptune',r:10, orbit:330,speed:.001, angle:5.1,bands:['#3050c8','#2040b0','#4060d8','#182890']},
+];
+
+const NSTARS=[
+  {id:'star1',fx:.10,fy:.14,core:'#fffce0',halo:'rgba(255,252,180,0.18)',size:5,label:'α Centauri'},
+  {id:'star2',fx:.88,fy:.20,core:'#e8f8ff',halo:'rgba(200,230,255,0.2)',size:7,label:'Sirius'},
+  {id:'star3',fx:.78,fy:.83,core:'#ff9966',halo:'rgba(255,120,60,0.2)',size:6,label:'Betelgeuse'},
+];
+
+const BG=[];
+for(let i=0;i<260;i++) BG.push({x:Math.random(),y:Math.random(),s:Math.random()*1.3+.2,a:Math.random()*.8+.15,ph:Math.random()*Math.PI*2});
+
+let rotX=.32,rotY=0,frame=0;
+let ptrDown=false,ptrX=0,ptrY=0,startRotX=0,startRotY=0,moved=false,ptrDownTime=0;
+let hits=[];
+
+const scache={};
+function makeSphere(id,r,bands){
+  if(scache[id])return scache[id];
+  const sz=Math.max(60,Math.ceil(r*8));
+  const oc=document.createElement('canvas');oc.width=oc.height=sz;
+  const ox=oc.getContext('2d');const cr=sz/2;
+  const bw=sz/bands.length;
+  bands.forEach((col,i)=>{ox.fillStyle=col;ox.fillRect(0,i*bw,sz,bw+1);});
+  const img=ox.getImageData(0,0,sz,sz);const d=img.data;
+  for(let py=0;py<sz;py++)for(let px=0;px<sz;px++){
+    const dx=px-cr,dy=py-cr,dist=Math.sqrt(dx*dx+dy*dy);
+    const idx=(py*sz+px)*4;
+    if(dist>cr-.5){d[idx+3]=0;continue;}
+    const nx=dx/cr,ny=dy/cr,nz=Math.sqrt(Math.max(0,1-nx*nx-ny*ny));
+    const diff=Math.max(0,-nx*.4-ny*.5+nz*.8);
+    const bright=Math.min(1,.18+diff*.85),spec=Math.pow(Math.max(0,diff),16)*.4;
+    d[idx]=Math.min(255,d[idx]*bright+255*spec);
+    d[idx+1]=Math.min(255,d[idx+1]*bright+255*spec*.8);
+    d[idx+2]=Math.min(255,d[idx+2]*bright+255*spec*.6);
+  }
+  ox.putImageData(img,0,0);scache[id]=oc;return oc;
+}
+
+function drawSphere(tctx,id,bands,cx,cy,r){
+  const tex=makeSphere(id,r,bands);
+  tctx.save();tctx.beginPath();tctx.arc(cx,cy,r,0,Math.PI*2);tctx.clip();
+  tctx.drawImage(tex,cx-r-1,cy-r-1,r*2+2,r*2+2);tctx.restore();
+  tctx.save();tctx.beginPath();tctx.arc(cx,cy,r+.5,0,Math.PI*2);tctx.clip();
+  const shd=tctx.createLinearGradient(cx-r,cy,cx+r,cy);
+  shd.addColorStop(0,'rgba(0,0,0,0)');shd.addColorStop(.5,'rgba(0,0,0,0)');shd.addColorStop(1,'rgba(0,0,12,.75)');
+  tctx.fillStyle=shd;tctx.fillRect(cx-r,cy-r,r*2,r*2);tctx.restore();
+  const spc=tctx.createRadialGradient(cx-r*.3,cy-r*.35,0,cx,cy,r);
+  spc.addColorStop(0,'rgba(255,255,255,.22)');spc.addColorStop(.4,'rgba(255,255,255,.04)');spc.addColorStop(1,'rgba(0,0,0,0)');
+  tctx.fillStyle=spc;tctx.beginPath();tctx.arc(cx,cy,r,0,Math.PI*2);tctx.fill();
+}
+
+function drawSun(tctx,cx,cy,r){
+  const corona=tctx.createRadialGradient(cx,cy,r*.8,cx,cy,r*3.8);
+  corona.addColorStop(0,'rgba(255,180,0,.18)');corona.addColorStop(.5,'rgba(255,100,0,.05)');corona.addColorStop(1,'rgba(0,0,0,0)');
+  tctx.fillStyle=corona;tctx.beginPath();tctx.arc(cx,cy,r*3.8,0,Math.PI*2);tctx.fill();
+  const sg=tctx.createRadialGradient(cx-r*.25,cy-r*.2,0,cx,cy,r);
+  sg.addColorStop(0,'#fff9e0');sg.addColorStop(.15,'#ffe560');sg.addColorStop(.5,'#ffa500');sg.addColorStop(.8,'#ff6000');sg.addColorStop(1,'rgba(200,40,0,.8)');
+  tctx.fillStyle=sg;tctx.beginPath();tctx.arc(cx,cy,r,0,Math.PI*2);tctx.fill();
+}
+
+function drawStar(tctx,cx,cy,r,core,halo){
+  const h=tctx.createRadialGradient(cx,cy,0,cx,cy,r*9);
+  h.addColorStop(0,halo);h.addColorStop(1,'rgba(0,0,0,0)');
+  tctx.fillStyle=h;tctx.beginPath();tctx.arc(cx,cy,r*9,0,Math.PI*2);tctx.fill();
+  const ig=tctx.createRadialGradient(cx,cy,0,cx,cy,r*3);
+  ig.addColorStop(0,'#fff');ig.addColorStop(.3,core);ig.addColorStop(1,'rgba(0,0,0,0)');
+  tctx.fillStyle=ig;tctx.beginPath();tctx.arc(cx,cy,r*3,0,Math.PI*2);tctx.fill();
+  tctx.fillStyle='#fff';tctx.beginPath();tctx.arc(cx,cy,r*.7,0,Math.PI*2);tctx.fill();
+  tctx.strokeStyle='rgba(255,255,255,0.25)';tctx.lineWidth=.8;
+  for(let a=0;a<4;a++){const ang=a*Math.PI/4;tctx.beginPath();tctx.moveTo(cx+Math.cos(ang)*r,cy+Math.sin(ang)*r);tctx.lineTo(cx+Math.cos(ang)*r*7,cy+Math.sin(ang)*r*7);tctx.stroke();}
+}
+
+function proj(x3,y3,z3,cx,cy){
+  const cX=Math.cos(rotX),sX=Math.sin(rotX),cY=Math.cos(rotY),sY=Math.sin(rotY);
+  const rx=x3*cY+z3*sY,rz2=-x3*sY+z3*cY;
+  const ry=y3*cX-rz2*sX,rz=y3*sX+rz2*cX;
+  const sc=760/(760+rz+220);
+  return{sx:cx+rx*sc,sy:cy+ry*sc,sc,rz};
+}
+
+function draw(){
+  const W=cv.width,H=cv.height,cx=W/2,cy=H/2,sc=W/680;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#02020e';ctx.fillRect(0,0,W,H);
+  const mw=ctx.createRadialGradient(W*.38,H*.5,0,W*.38,H*.5,W*.52);
+  mw.addColorStop(0,'rgba(70,70,140,.05)');mw.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=mw;ctx.fillRect(0,0,W,H);
+  BG.forEach(s=>{
+    const tw=.75+Math.sin(frame*.025+s.ph)*.25;
+    ctx.globalAlpha=s.a*tw;ctx.fillStyle='#fff';
+    ctx.beginPath();ctx.arc(s.x*W,s.y*H,s.s,0,Math.PI*2);ctx.fill();
+  });
+  ctx.globalAlpha=1;
+  NSTARS.forEach(s=>{
+    const sx=s.fx*W,sy=s.fy*H;
+    drawStar(ctx,sx,sy,s.size*sc,s.core,s.halo);
+    ctx.fillStyle='rgba(255,255,255,0.42)';
+    ctx.font=`${Math.round(10*sc)}px sans-serif`;
+    ctx.fillText(s.label,sx+s.size*1.6*sc,sy+4*sc);
+  });
+  const pdata=PLANETS.map(p=>{
+    const ang=p.angle+frame*p.speed;
+    const x3=Math.cos(ang)*p.orbit,z3=Math.sin(ang)*p.orbit*.38;
+    return{p,pr:proj(x3,0,z3,cx,cy)};
+  });
+  ctx.globalAlpha=.13;ctx.strokeStyle='rgba(200,200,255,0.7)';ctx.lineWidth=.5;ctx.setLineDash([2,5]);
+  PLANETS.forEach(p=>{
+    ctx.beginPath();
+    for(let i=0;i<=120;i++){const a=(i/120)*Math.PI*2;const op=proj(Math.cos(a)*p.orbit,0,Math.sin(a)*p.orbit*.38,cx,cy);i===0?ctx.moveTo(op.sx,op.sy):ctx.lineTo(op.sx,op.sy);}
+    ctx.stroke();
+  });
+  ctx.setLineDash([]);ctx.globalAlpha=1;
+  pdata.sort((a,b)=>b.pr.rz-a.pr.rz);
+  hits=[{id:'sun',x:cx,y:cy,r:30*sc}];
+  pdata.forEach(({p,pr})=>{
+    const r2=p.r*pr.sc*sc,sx=pr.sx,sy=pr.sy;
+    if(r2<1)return;
+    if(p.id==='saturn'){
+      [1.9,1.65,1.4,1.15].forEach((rf,ri)=>{
+        ctx.globalAlpha=.12+ri*.03;ctx.strokeStyle=ri%2===0?'#c8a840':'#e0d080';ctx.lineWidth=r2*.38;
+        ctx.beginPath();ctx.ellipse(sx,sy,r2*rf,r2*rf*.28,0,Math.PI*.98,Math.PI*2.02);ctx.stroke();
+      });ctx.globalAlpha=1;
+    }
+    drawSphere(ctx,p.id,p.bands,sx,sy,r2);
+    const atm=ctx.createRadialGradient(sx,sy,r2*.7,sx,sy,r2*1.55);
+    const ac=p.id==='earth'?'rgba(100,160,255,.1)':p.id==='venus'?'rgba(220,180,80,.08)':'rgba(80,80,120,.05)';
+    atm.addColorStop(0,'rgba(0,0,0,0)');atm.addColorStop(.7,ac);atm.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=atm;ctx.beginPath();ctx.arc(sx,sy,r2*1.55,0,Math.PI*2);ctx.fill();
+    if(p.id==='saturn'){
+      [1.15,1.4,1.65,1.9].forEach((rf,ri)=>{
+        ctx.globalAlpha=.14+ri*.03;ctx.strokeStyle=ri%2===0?'#c8a840':'#e0d080';ctx.lineWidth=r2*.38;
+        ctx.beginPath();ctx.ellipse(sx,sy,r2*rf,r2*rf*.28,0,-.1,.1+Math.PI);ctx.stroke();
+      });ctx.globalAlpha=1;
+    }
+    hits.push({id:p.id,x:sx,y:sy,r:Math.max(r2+2,10)});
+  });
+  drawSun(ctx,cx,cy,28*sc);
+  for(let i=0;i<8;i++){
+    const a=(frame*.008+i*Math.PI*.25),sr=28*sc;
+    const rx2=cx+Math.cos(a)*sr*.55,ry2=cy+Math.sin(a)*sr*.4;
+    const sg2=ctx.createRadialGradient(rx2,ry2,0,rx2,ry2,sr*.28);
+    sg2.addColorStop(0,'rgba(255,240,100,.22)');sg2.addColorStop(1,'rgba(255,100,0,0)');
+    ctx.fillStyle=sg2;ctx.beginPath();ctx.arc(rx2,ry2,sr*.28,0,Math.PI*2);ctx.fill();
+  }
+  NSTARS.forEach(s=>hits.push({id:s.id,x:s.fx*W,y:s.fy*H,r:s.size*2.5*sc+12}));
+  frame++;requestAnimationFrame(draw);
+}
+draw();
+
+function drawModalPreview(id){
+  mcanvas.width=90;mcanvas.height=90;
+  mctx.clearRect(0,0,90,90);
+  mctx.fillStyle='#07071e';mctx.fillRect(0,0,90,90);
+  const p=PLANETS.find(x=>x.id===id);
+  if(id==='sun'){drawSun(mctx,45,45,30);}
+  else if(id==='star1'){drawStar(mctx,45,45,5,'#fffce0','rgba(255,252,180,0.3)');}
+  else if(id==='star2'){drawStar(mctx,45,45,6,'#e8f8ff','rgba(200,230,255,0.3)');}
+  else if(id==='star3'){drawStar(mctx,45,45,5,'#ff9966','rgba(255,120,60,0.3)');}
+  else if(p){
+    if(id==='saturn'){
+      [1.9,1.65,1.4,1.15].forEach((rf,ri)=>{
+        mctx.globalAlpha=.15+ri*.04;mctx.strokeStyle=ri%2===0?'#c8a840':'#e0d080';mctx.lineWidth=4;
+        mctx.beginPath();mctx.ellipse(45,45,28*rf,28*rf*.28,0,Math.PI*.98,Math.PI*2.02);mctx.stroke();
+      });mctx.globalAlpha=1;
+    }
+    drawSphere(mctx,p.id,p.bands,45,45,28);
+    if(id==='saturn'){
+      [1.15,1.4,1.65,1.9].forEach((rf,ri)=>{
+        mctx.globalAlpha=.17+ri*.04;mctx.strokeStyle=ri%2===0?'#c8a840':'#e0d080';mctx.lineWidth=4;
+        mctx.beginPath();mctx.ellipse(45,45,28*rf,28*rf*.28,0,-.1,.1+Math.PI);mctx.stroke();
+      });mctx.globalAlpha=1;
+    }
+    const atm=mctx.createRadialGradient(45,45,22,45,45,38);
+    const ac=id==='earth'?'rgba(100,160,255,.15)':id==='venus'?'rgba(220,180,80,.1)':'rgba(80,80,120,.07)';
+    atm.addColorStop(0,'rgba(0,0,0,0)');atm.addColorStop(.7,ac);atm.addColorStop(1,'rgba(0,0,0,0)');
+    mctx.fillStyle=atm;mctx.beginPath();mctx.arc(45,45,38,0,Math.PI*2);mctx.fill();
+  }
+}
+
+function getPos(e){
+  const r=cv.getBoundingClientRect();
+  const src=e.touches?e.touches[0]:(e.changedTouches?e.changedTouches[0]:e);
+  return{x:src.clientX-r.left,y:src.clientY-r.top};
+}
+function getHit(mx,my){for(const h of hits){if(Math.hypot(mx-h.x,my-h.y)<h.r)return h.id;}return null;}
+
+cv.addEventListener('mousedown',e=>{const pos=getPos(e);ptrDown=true;moved=false;ptrX=pos.x;ptrY=pos.y;startRotX=rotX;startRotY=rotY;ptrDownTime=Date.now();});
+document.addEventListener('mousemove',e=>{
+  const r=cv.getBoundingClientRect();const mx=e.clientX-r.left,my=e.clientY-r.top;
+  if(ptrDown){const dx=mx-ptrX,dy=my-ptrY;if(Math.abs(dx)>3||Math.abs(dy)>3){moved=true;tip.style.display='none';rotY=startRotY+dx*.007;rotX=Math.max(-.9,Math.min(1.1,startRotX+dy*.007));}}
+  else{const hit=getHit(mx,my);if(hit&&DATA[hit]){tip.style.display='block';tip.style.left=mx+'px';tip.style.top=my+'px';tip.textContent=DATA[hit].name;cv.style.cursor='pointer';}else{tip.style.display='none';cv.style.cursor='grab';}}
+});
+document.addEventListener('mouseup',e=>{
+  if(!moved&&Date.now()-ptrDownTime<300){const r=cv.getBoundingClientRect();const hit=getHit(e.clientX-r.left,e.clientY-r.top);if(hit&&DATA[hit])openModal(hit,DATA[hit]);}
+  ptrDown=false;moved=false;
+});
+cv.addEventListener('touchstart',e=>{e.preventDefault();const pos=getPos(e);ptrDown=true;moved=false;ptrX=pos.x;ptrY=pos.y;startRotX=rotX;startRotY=rotY;ptrDownTime=Date.now();},{passive:false});
+cv.addEventListener('touchmove',e=>{e.preventDefault();const pos=getPos(e);if(!ptrDown)return;const dx=pos.x-ptrX,dy=pos.y-ptrY;if(Math.abs(dx)>5||Math.abs(dy)>5){moved=true;rotY=startRotY+dx*.007;rotX=Math.max(-.9,Math.min(1.1,startRotX+dy*.007));}},{passive:false});
+cv.addEventListener('touchend',e=>{e.preventDefault();if(!moved&&Date.now()-ptrDownTime<300){const pos=getPos(e);const hit=getHit(pos.x,pos.y);if(hit&&DATA[hit])openModal(hit,DATA[hit]);}ptrDown=false;moved=false;},{passive:false});
+
+function openModal(id,d){
+  drawModalPreview(id);
+  document.getElementById('mname').textContent=d.name;
+  document.getElementById('mtype').textContent=d.type;
+  document.getElementById('mpoem').textContent=d.poem;
+  overlay.classList.add('on');
+}
+document.getElementById('mclose').addEventListener('click',()=>overlay.classList.remove('on'));
+overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.classList.remove('on');});
+</script>
