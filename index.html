@@ -56,14 +56,14 @@ const DATA={
 };
 
 const PLANETS=[
-  {id:'mercury',r:4,  orbit:60, speed:.008, angle:1.2,bands:['#5c5c5c','#787878','#6a6a6a','#4e4e4e']},
-  {id:'venus',  r:7,  orbit:90, speed:.006, angle:.5, bands:['#d4a96a','#c9954a','#e0c080','#b88840']},
-  {id:'earth',  r:9,  orbit:122,speed:.005, angle:2.1,bands:['#1a6e9e','#2e8b57','#4a9abe','#3cb371','#1c5f88']},
-  {id:'mars',   r:5.5,orbit:155,speed:.004, angle:3.5,bands:['#b5421a','#cd5c2a','#a03010','#d06030']},
-  {id:'jupiter',r:17, orbit:203,speed:.003, angle:.8, bands:['#c8a87a','#b89060','#d4b890','#a07848','#c0a060','#d8c098','#b88850']},
-  {id:'saturn', r:13, orbit:253,speed:.002, angle:4.2,bands:['#d4c080','#c8b068','#e0cc90','#b89858','#d0bc78']},
-  {id:'uranus', r:10, orbit:293,speed:.0015,angle:1.8,bands:['#6dc0c0','#5aafaf','#7dd0d0','#50a0a0']},
-  {id:'neptune',r:10, orbit:330,speed:.001, angle:5.1,bands:['#3050c8','#2040b0','#4060d8','#182890']},
+  {id:'mercury',r:4,  orbit:78, speed:.008, angle:1.2,bands:['#5c5c5c','#787878','#6a6a6a','#4e4e4e']},
+  {id:'venus',  r:7,  orbit:105,speed:.006, angle:.5, bands:['#d4a96a','#c9954a','#e0c080','#b88840']},
+  {id:'earth',  r:9,  orbit:142,speed:.005, angle:2.1,bands:['#1a6e9e','#2e8b57','#4a9abe','#3cb371','#1c5f88']},
+  {id:'mars',   r:5.5,orbit:180,speed:.004, angle:3.5,bands:['#b5421a','#cd5c2a','#a03010','#d06030']},
+  {id:'jupiter',r:17, orbit:238,speed:.003, angle:.8, bands:['#c8a87a','#b89060','#d4b890','#a07848','#c0a060','#d8c098','#b88850']},
+  {id:'saturn', r:13, orbit:298,speed:.002, angle:4.2,bands:['#d4c080','#c8b068','#e0cc90','#b89858','#d0bc78']},
+  {id:'uranus', r:10, orbit:348,speed:.0015,angle:1.8,bands:['#6dc0c0','#5aafaf','#7dd0d0','#50a0a0']},
+  {id:'neptune',r:10, orbit:392,speed:.001, angle:5.1,bands:['#3050c8','#2040b0','#4060d8','#182890']},
 ];
 
 const NSTARS=[
@@ -74,6 +74,41 @@ const NSTARS=[
 
 const BG=[];
 for(let i=0;i<260;i++) BG.push({x:Math.random(),y:Math.random(),s:Math.random()*1.3+.2,a:Math.random()*.8+.15,ph:Math.random()*Math.PI*2});
+
+let SHOOTING=[];
+let nextShootIn=60;
+function spawnShootingStar(W,H){
+  const fromLeft=Math.random()<0.5;
+  const y0=Math.random()*H*0.55;
+  const x0=fromLeft?-20:W+20;
+  const ang=fromLeft?(Math.random()*0.4+0.15):(Math.PI-(Math.random()*0.4+0.15));
+  const speed=(Math.random()*4+6);
+  SHOOTING.push({
+    x:x0,y:y0,
+    vx:Math.cos(ang)*speed,vy:Math.sin(ang)*speed,
+    life:0,maxLife:Math.random()*22+34,
+    len:Math.random()*60+50
+  });
+}
+function drawShootingStars(tctx,W,H){
+  nextShootIn--;
+  if(nextShootIn<=0){spawnShootingStar(W,H);nextShootIn=180;}
+  SHOOTING=SHOOTING.filter(s=>s.life<s.maxLife&&s.x>-80&&s.x<W+80&&s.y>-80&&s.y<H+80);
+  SHOOTING.forEach(s=>{
+    s.x+=s.vx;s.y+=s.vy;s.life++;
+    const fade=1-Math.max(0,(s.life-s.maxLife*.6))/(s.maxLife*.4);
+    const ang=Math.atan2(s.vy,s.vx);
+    const tx=s.x-Math.cos(ang)*s.len,ty=s.y-Math.sin(ang)*s.len;
+    const grad=tctx.createLinearGradient(s.x,s.y,tx,ty);
+    grad.addColorStop(0,`rgba(255,255,255,${0.95*fade})`);
+    grad.addColorStop(0.4,`rgba(200,220,255,${0.4*fade})`);
+    grad.addColorStop(1,'rgba(200,220,255,0)');
+    tctx.strokeStyle=grad;tctx.lineWidth=1.6;tctx.lineCap='round';
+    tctx.beginPath();tctx.moveTo(s.x,s.y);tctx.lineTo(tx,ty);tctx.stroke();
+    tctx.fillStyle=`rgba(255,255,255,${fade})`;
+    tctx.beginPath();tctx.arc(s.x,s.y,1.6,0,Math.PI*2);tctx.fill();
+  });
+}
 
 let rotX=.32,rotY=0,frame=0;
 let ptrDown=false,ptrX=0,ptrY=0,startRotX=0,startRotY=0,moved=false,ptrDownTime=0;
@@ -157,6 +192,7 @@ function draw(){
     ctx.beginPath();ctx.arc(s.x*W,s.y*H,s.s,0,Math.PI*2);ctx.fill();
   });
   ctx.globalAlpha=1;
+  drawShootingStars(ctx,W,H);
   NSTARS.forEach(s=>{
     const sx=s.fx*W,sy=s.fy*H;
     drawStar(ctx,sx,sy,s.size*sc,s.core,s.halo);
