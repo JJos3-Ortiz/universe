@@ -1,3 +1,9 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>El Universo de Arleth</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 #wrap{position:relative;width:100%;height:100vh;height:100dvh;background:#02020e;overflow:hidden;user-select:none}
@@ -14,6 +20,8 @@
 #mclose{margin-top:20px;background:transparent;border:1px solid rgba(255,255,255,0.18);color:rgba(255,255,255,0.5);padding:9px 26px;border-radius:24px;cursor:pointer;font:13px sans-serif;letter-spacing:.5px}
 #mclose:hover{border-color:rgba(255,255,255,0.45);color:#fff}
 </style>
+</head>
+<body>
 <div id="wrap">
 <canvas id="c"></canvas>
 <div id="tip"></div>
@@ -46,13 +54,15 @@ const DATA={
   venus:{name:'Venus',type:'Planeta del Amor',poem:`Arleth, eres como Venus.\nLa primera en aparecer cada noche\ny la última en desvanecerse.\nNo necesitas el sol para brillar,\ntu propia luz es suficiente\npara guiar a quien sabe mirarte.`},
   earth:{name:'La Tierra',type:'Nuestro Hogar',poem:`Arleth, eres como la Tierra.\nEl único lugar en todo el universo\ndonde todo tiene vida y sentido.\nContigo, cualquier lugar\nse convierte en hogar,\ncualquier momento, en eterno.`},
   mars:{name:'Marte',type:'Planeta Rojo',poem:`Arleth, eres como Marte.\nIntensa, apasionada, llena de misterio.\nHay en ti mundos que todavía\nnadie ha tenido el privilegio de conocer,\ny yo quisiera ser\nel primero en explorarlos todos.`},
-  jupiter:{name:'Júpiter',type:'Gigante Gaseoso',poem:`Arleth, eres como Júpiter.\nGrande en presencia, grande en alma,\ncapaz de proteger con tu fuerza\na quienes orbitan cerca de ti.\nCon solo estar, cambias\nla gravedad de todo lo que te rodea.`},
+  jupiter:{name:'Júpiter',type:'Gigante Gaseoso',poem:`Arleth, eres como Júpiter.\nGrande en presencia, grande en alma,\ncapaz de proteger con su fuerza\na quienes orbitan cerca de ti.\nCon solo estar, cambias\nla gravedad de todo lo que te rodea.`},
   saturn:{name:'Saturno',type:'Señor de los Anillos',poem:`Arleth, eres como Saturno.\nTienes algo que ninguna otra tiene:\nesos anillos invisibles que llevas,\nhecha de detalles únicos\nque te hacen diferente\na cualquier cosa que exista en este cosmos.`},
   uranus:{name:'Urano',type:'Gigante de Hielo',poem:`Arleth, eres como Urano.\nDistinta, inesperada, única en tu manera de ser.\nMientras los demás siguen la norma,\ntú giras a tu propio ritmo\ny en esa diferencia\nes donde está toda tu magia.`},
   neptune:{name:'Neptuno',type:'Planeta Azul',poem:`Arleth, eres como Neptuno.\nProfunda, serena, llena de corrientes\nque pocos se atreven a sentir.\nHay en ti una intensidad tranquila\nque solo descubre quien\ntiene el valor de acercarse.`},
   star1:{name:'Alfa Centauri',type:'Estrella Cercana',poem:`Arleth, eres como Alfa Centauri.\nLa estrella más cercana al corazón.\nNo importa la distancia que haya,\nsiempre que levanto los ojos\neres tú la primera\nen la que pienso.`},
   star2:{name:'Sirius',type:'Estrella más Brillante',poem:`Arleth, brillas como Sirius.\nLa más brillante de todo el cielo,\nno porque lo intentes,\nsino porque es lo que eres.\nCuando entras a un lugar,\ntodo lo demás palidece.`},
-  star3:{name:'Betelgeuse',type:'Supergigante Roja',poem:`Arleth, eres como Betelgeuse.\nInmensa, ardiente, imposible de ignorar.\nHay en ti una energía tan grande\nque el universo entero\nse detiene a mirarte\ncada vez que decides brillar.`}
+  star3:{name:'Betelgeuse',type:'Supergigante Roja',poem:`Arleth, eres como Betelgeuse.\nInmensa, ardiente, imposible de ignorar.\nHay en ti una energía tan grande\nque el universo entero\nse detiene a mirarte\ncada vez que decides brillar.`},
+  blackhole:{name:'El Agujero Negro',type:'Singularidad del Cosmos',poem:`Arleth, eres como un agujero negro.\nNo porque destruyas,\nsino porque tienes una gravedad\ntan tuya, tan única,\nque quien se acerca\nno puede evitar quedarse.\nDoblas el tiempo cuando sonríes,\ny en tu luz, el universo entero\nencuentra su centro.`},
+  pillars:{name:'Los Pilares de la Creación',type:'Nebulosa del Águila',poem:`Arleth, eres como los Pilares de la Creación.\nHecha de polvo de estrellas y tiempo,\nde esa materia antigua\nde la que nacen los soles.\nDentro de ti\nhay mundos enteros por nacer,\nvidas que aún no han comenzado\na brillar.\nEres el origen de todo\nlo que vale la pena en este cosmos.`}
 };
 
 const PLANETS=[
@@ -72,6 +82,9 @@ const NSTARS=[
   {id:'star3',fx:.78,fy:.83,core:'#ff9966',halo:'rgba(255,120,60,0.2)',size:6,label:'Betelgeuse'},
 ];
 
+const BH={fx:.14,fy:.72,label:'Agujero Negro'};
+const PIL={fx:.82,fy:.50,label:'Pilares de la Creación'};
+
 const BG=[];
 for(let i=0;i<260;i++) BG.push({x:Math.random(),y:Math.random(),s:Math.random()*1.3+.2,a:Math.random()*.8+.15,ph:Math.random()*Math.PI*2});
 
@@ -83,12 +96,7 @@ function spawnShootingStar(W,H){
   const x0=fromLeft?-20:W+20;
   const ang=fromLeft?(Math.random()*0.4+0.15):(Math.PI-(Math.random()*0.4+0.15));
   const speed=(Math.random()*4+6);
-  SHOOTING.push({
-    x:x0,y:y0,
-    vx:Math.cos(ang)*speed,vy:Math.sin(ang)*speed,
-    life:0,maxLife:Math.random()*22+34,
-    len:Math.random()*60+50
-  });
+  SHOOTING.push({x:x0,y:y0,vx:Math.cos(ang)*speed,vy:Math.sin(ang)*speed,life:0,maxLife:Math.random()*22+34,len:Math.random()*60+50});
 }
 function drawShootingStars(tctx,W,H){
   nextShootIn--;
@@ -171,6 +179,146 @@ function drawStar(tctx,cx,cy,r,core,halo){
   for(let a=0;a<4;a++){const ang=a*Math.PI/4;tctx.beginPath();tctx.moveTo(cx+Math.cos(ang)*r,cy+Math.sin(ang)*r);tctx.lineTo(cx+Math.cos(ang)*r*7,cy+Math.sin(ang)*r*7);tctx.stroke();}
 }
 
+function drawBlackHole(tctx,cx,cy,sc2){
+  const bhr=22*sc2;
+  const outerGlow=tctx.createRadialGradient(cx,cy,bhr*1.1,cx,cy,bhr*4.5);
+  outerGlow.addColorStop(0,'rgba(120,80,200,0.12)');
+  outerGlow.addColorStop(0.4,'rgba(60,30,120,0.06)');
+  outerGlow.addColorStop(1,'rgba(0,0,0,0)');
+  tctx.fillStyle=outerGlow;tctx.beginPath();tctx.arc(cx,cy,bhr*4.5,0,Math.PI*2);tctx.fill();
+  tctx.save();
+  tctx.translate(cx,cy);
+  for(let i=5;i>=0;i--){
+    const rOuter=bhr*(1.4+i*0.28);
+    const rInner=bhr*(1.15+i*0.22);
+    const heat=i/5;
+    const alpha=0.10+heat*0.18;
+    const r2=Math.round(255*Math.min(1,0.4+heat*0.6));
+    const g2=Math.round(180*heat*heat);
+    const b2=Math.round(80*(1-heat));
+    tctx.save();
+    tctx.scale(1,0.28);
+    tctx.beginPath();
+    tctx.arc(0,0,rOuter,Math.PI,Math.PI*2,false);
+    tctx.arc(0,0,rInner,Math.PI*2,Math.PI,true);
+    tctx.closePath();
+    tctx.fillStyle=`rgba(${r2},${g2},${b2},${alpha})`;
+    tctx.fill();
+    tctx.restore();
+  }
+  const singularity=tctx.createRadialGradient(-bhr*0.2,-bhr*0.15,0,0,0,bhr);
+  singularity.addColorStop(0,'#0a0010');
+  singularity.addColorStop(0.6,'#04000a');
+  singularity.addColorStop(1,'#000000');
+  tctx.fillStyle=singularity;
+  tctx.beginPath();tctx.arc(0,0,bhr,0,Math.PI*2);tctx.fill();
+  const photonRing=tctx.createRadialGradient(0,0,bhr*0.88,0,0,bhr*1.08);
+  photonRing.addColorStop(0,'rgba(0,0,0,0)');
+  photonRing.addColorStop(0.4,'rgba(255,200,120,0.55)');
+  photonRing.addColorStop(0.7,'rgba(255,160,60,0.25)');
+  photonRing.addColorStop(1,'rgba(0,0,0,0)');
+  tctx.fillStyle=photonRing;
+  tctx.beginPath();tctx.arc(0,0,bhr*1.08,0,Math.PI*2);tctx.fill();
+  for(let i=0;i<6;i++){
+    const rOuter=bhr*(1.4+i*0.28);
+    const rInner=bhr*(1.15+i*0.22);
+    const heat=(5-i)/5;
+    const alpha=0.12+heat*0.22;
+    const r2=Math.round(255*Math.min(1,0.4+heat*0.6));
+    const g2=Math.round(200*heat*heat);
+    const b2=Math.round(80*(1-heat));
+    tctx.save();
+    tctx.scale(1,0.28);
+    tctx.beginPath();
+    tctx.arc(0,0,rOuter,0,Math.PI,false);
+    tctx.arc(0,0,rInner,Math.PI,0,true);
+    tctx.closePath();
+    tctx.fillStyle=`rgba(${r2},${g2},${b2},${alpha})`;
+    tctx.fill();
+    tctx.restore();
+  }
+  const jet=tctx.createLinearGradient(0,-bhr*5,0,-bhr*1.2);
+  jet.addColorStop(0,'rgba(180,120,255,0)');
+  jet.addColorStop(0.6,'rgba(180,120,255,0.08)');
+  jet.addColorStop(1,'rgba(220,180,255,0.18)');
+  tctx.fillStyle=jet;
+  tctx.beginPath();
+  tctx.ellipse(0,-bhr*3.1,bhr*0.18,bhr*2,0,0,Math.PI*2);
+  tctx.fill();
+  tctx.restore();
+}
+
+function drawPillars(tctx,cx,cy,sc2){
+  const pw=sc2;
+  tctx.save();
+  tctx.translate(cx,cy);
+  const nebGlow=tctx.createRadialGradient(0,0,0,0,0,80*pw);
+  nebGlow.addColorStop(0,'rgba(60,30,80,0.22)');
+  nebGlow.addColorStop(0.5,'rgba(30,20,60,0.12)');
+  nebGlow.addColorStop(1,'rgba(0,0,0,0)');
+  tctx.fillStyle=nebGlow;tctx.beginPath();tctx.arc(0,0,80*pw,0,Math.PI*2);tctx.fill();
+
+  function drawPillar(x,baseY,topY,maxW,minW,colorTop,colorMid,colorBase){
+    tctx.save();
+    const grad=tctx.createLinearGradient(x,topY,x,baseY);
+    grad.addColorStop(0,colorTop);
+    grad.addColorStop(0.5,colorMid);
+    grad.addColorStop(1,colorBase);
+    tctx.beginPath();
+    const wTop=minW,wBase=maxW;
+    tctx.moveTo(x-wTop,topY);
+    tctx.bezierCurveTo(x-wTop*1.3,topY+(baseY-topY)*0.35, x-wBase*1.1,topY+(baseY-topY)*0.65, x-wBase,baseY);
+    tctx.lineTo(x+wBase,baseY);
+    tctx.bezierCurveTo(x+wBase*1.1,topY+(baseY-topY)*0.65, x+wTop*1.3,topY+(baseY-topY)*0.35, x+wTop,topY);
+    tctx.closePath();
+    tctx.fillStyle=grad;
+    tctx.fill();
+    tctx.beginPath();
+    tctx.moveTo(x+wTop,topY);
+    tctx.bezierCurveTo(x+wTop*1.3,topY+(baseY-topY)*0.35, x+wBase*1.1,topY+(baseY-topY)*0.65, x+wBase,baseY);
+    tctx.strokeStyle='rgba(200,160,255,0.15)';
+    tctx.lineWidth=1*pw;
+    tctx.stroke();
+    const tipGlow=tctx.createRadialGradient(x,topY+4*pw,0,x,topY+4*pw,12*pw);
+    tipGlow.addColorStop(0,'rgba(255,240,200,0.35)');
+    tipGlow.addColorStop(0.5,'rgba(200,160,255,0.12)');
+    tipGlow.addColorStop(1,'rgba(0,0,0,0)');
+    tctx.fillStyle=tipGlow;
+    tctx.beginPath();tctx.arc(x,topY+4*pw,12*pw,0,Math.PI*2);tctx.fill();
+    tctx.fillStyle='rgba(255,220,180,0.25)';
+    for(let d=0;d<8;d++){
+      const dy=topY+(baseY-topY)*(d/8+0.05);
+      const spread=(wTop+(wBase-wTop)*(d/8))*0.7;
+      const dx=x+(Math.random()-0.5)*spread*1.8;
+      tctx.beginPath();tctx.arc(dx,dy,0.5*pw,0,Math.PI*2);tctx.fill();
+    }
+    tctx.restore();
+  }
+
+  drawPillar(0,-52*pw,28*pw,14*pw,5*pw,'rgba(80,40,100,0.9)','rgba(120,60,140,0.85)','rgba(40,20,60,0.95)');
+  drawPillar(-26*pw,-34*pw,26*pw,9*pw,3.5*pw,'rgba(70,35,90,0.88)','rgba(100,50,120,0.8)','rgba(35,18,55,0.92)');
+  drawPillar(22*pw,-22*pw,24*pw,7*pw,2.5*pw,'rgba(65,30,85,0.82)','rgba(95,45,115,0.75)','rgba(30,15,50,0.88)');
+  drawPillar(-42*pw,-14*pw,22*pw,5*pw,2*pw,'rgba(55,25,75,0.72)','rgba(80,40,100,0.65)','rgba(25,12,45,0.78)');
+
+  for(let i=0;i<6;i++){
+    const wx=(Math.random()-0.5)*70*pw;
+    const wy=(Math.random()-0.5)*55*pw;
+    const wr=(Math.random()*16+8)*pw;
+    const wAlpha=0.03+Math.random()*0.05;
+    const wg=tctx.createRadialGradient(wx,wy,0,wx,wy,wr);
+    const hue=i%2===0?'180,120,255':'120,180,255';
+    wg.addColorStop(0,`rgba(${hue},${wAlpha})`);
+    wg.addColorStop(1,'rgba(0,0,0,0)');
+    tctx.fillStyle=wg;
+    tctx.beginPath();tctx.arc(wx,wy,wr,0,Math.PI*2);tctx.fill();
+  }
+
+  tctx.restore();
+  tctx.fillStyle='rgba(200,160,255,0.45)';
+  tctx.font=`${Math.round(10*sc2)}px sans-serif`;
+  tctx.fillText('Pilares de la Creación',cx+38*sc2,cy-42*sc2);
+}
+
 function proj(x3,y3,z3,cx,cy){
   const cX=Math.cos(rotX),sX=Math.sin(rotX),cY=Math.cos(rotY),sY=Math.sin(rotY);
   const rx=x3*cY+z3*sY,rz2=-x3*sY+z3*cY;
@@ -193,6 +341,16 @@ function draw(){
   });
   ctx.globalAlpha=1;
   drawShootingStars(ctx,W,H);
+
+  const bhx=BH.fx*W,bhy=BH.fy*H;
+  drawBlackHole(ctx,bhx,bhy,sc);
+  ctx.fillStyle='rgba(180,140,255,0.38)';
+  ctx.font=`${Math.round(10*sc)}px sans-serif`;
+  ctx.fillText(BH.label,bhx+28*sc,bhy-20*sc);
+
+  const pilx=PIL.fx*W,pily=PIL.fy*H;
+  drawPillars(ctx,pilx,pily,sc);
+
   NSTARS.forEach(s=>{
     const sx=s.fx*W,sy=s.fy*H;
     drawStar(ctx,sx,sy,s.size*sc,s.core,s.halo);
@@ -214,7 +372,11 @@ function draw(){
   ctx.setLineDash([]);ctx.globalAlpha=1;
   const sunRz=proj(0,0,0,cx,cy).rz;
   pdata.sort((a,b)=>b.pr.rz-a.pr.rz);
-  hits=[{id:'sun',x:cx,y:cy,r:30*sc}];
+  hits=[
+    {id:'sun',x:cx,y:cy,r:30*sc},
+    {id:'blackhole',x:bhx,y:bhy,r:32*sc},
+    {id:'pillars',x:pilx,y:pily,r:55*sc}
+  ];
   let sunDrawn=false;
   const drawSunNow=()=>{drawSun(ctx,cx,cy,28*sc);
     for(let i=0;i<8;i++){
@@ -263,6 +425,8 @@ function drawModalPreview(id){
   else if(id==='star1'){drawStar(mctx,45,45,5,'#fffce0','rgba(255,252,180,0.3)');}
   else if(id==='star2'){drawStar(mctx,45,45,6,'#e8f8ff','rgba(200,230,255,0.3)');}
   else if(id==='star3'){drawStar(mctx,45,45,5,'#ff9966','rgba(255,120,60,0.3)');}
+  else if(id==='blackhole'){drawBlackHole(mctx,45,45,1.18);}
+  else if(id==='pillars'){drawPillars(mctx,45,55,0.88);}
   else if(p){
     if(id==='saturn'){
       [1.9,1.65,1.4,1.15].forEach((rf,ri)=>{
@@ -315,3 +479,5 @@ function openModal(id,d){
 document.getElementById('mclose').addEventListener('click',()=>overlay.classList.remove('on'));
 overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.classList.remove('on');});
 </script>
+</body>
+</html>
