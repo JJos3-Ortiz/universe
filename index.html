@@ -425,18 +425,22 @@ function drawModalPreview(id){
 function getPos(e){
   const r=cv.getBoundingClientRect();
   const src=e.touches?e.touches[0]:(e.changedTouches?e.changedTouches[0]:e);
-  return{x:src.clientX-r.left,y:src.clientY-r.top};
+  // Escala entre el tamaño CSS visual del canvas (rect) y su resolución interna real (cv.width/height).
+  // En móvil ambos pueden diferir, por lo que sin este ajuste los taps no coinciden con los planetas.
+  const scaleX=cv.width/r.width;
+  const scaleY=cv.height/r.height;
+  return{x:(src.clientX-r.left)*scaleX,y:(src.clientY-r.top)*scaleY};
 }
 function getHit(mx,my){for(const h of hits){if(Math.hypot(mx-h.x,my-h.y)<h.r)return h.id;}return null;}
 
 cv.addEventListener('mousedown',e=>{const pos=getPos(e);ptrDown=true;moved=false;ptrX=pos.x;ptrY=pos.y;startRotX=rotX;startRotY=rotY;ptrDownTime=Date.now();});
 document.addEventListener('mousemove',e=>{
-  const r=cv.getBoundingClientRect();const mx=e.clientX-r.left,my=e.clientY-r.top;
+  const pos=getPos(e);const mx=pos.x,my=pos.y;
   if(ptrDown){const dx=mx-ptrX,dy=my-ptrY;if(Math.abs(dx)>3||Math.abs(dy)>3){moved=true;tip.style.display='none';rotY=startRotY+dx*.007;rotX=Math.max(-.9,Math.min(1.1,startRotX+dy*.007));}}
-  else{const hit=getHit(mx,my);if(hit&&DATA[hit]){tip.style.display='block';tip.style.left=mx+'px';tip.style.top=my+'px';tip.textContent=DATA[hit].name;cv.style.cursor='pointer';}else{tip.style.display='none';cv.style.cursor='grab';}}
+  else{const hit=getHit(mx,my);if(hit&&DATA[hit]){tip.style.display='block';tip.style.left=e.clientX-cv.getBoundingClientRect().left+'px';tip.style.top=e.clientY-cv.getBoundingClientRect().top+'px';tip.textContent=DATA[hit].name;cv.style.cursor='pointer';}else{tip.style.display='none';cv.style.cursor='grab';}}
 });
 document.addEventListener('mouseup',e=>{
-  if(!moved&&Date.now()-ptrDownTime<300){const r=cv.getBoundingClientRect();const hit=getHit(e.clientX-r.left,e.clientY-r.top);if(hit&&DATA[hit])openModal(hit,DATA[hit]);}
+  if(!moved&&Date.now()-ptrDownTime<300){const pos=getPos(e);const hit=getHit(pos.x,pos.y);if(hit&&DATA[hit])openModal(hit,DATA[hit]);}
   ptrDown=false;moved=false;
 });
 cv.addEventListener('touchstart',e=>{e.preventDefault();const pos=getPos(e);ptrDown=true;moved=false;ptrX=pos.x;ptrY=pos.y;startRotX=rotX;startRotY=rotY;ptrDownTime=Date.now();},{passive:false});
